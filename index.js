@@ -1,10 +1,26 @@
 require("dotenv").config();
+const mongoose = require("mongoose");
+const User = require("./models/User");
 const { Bot, InputFile, GrammyError, HttpError } = require("grammy");
 const fs = require("fs");
 const path = require("path");
 
 const bot = new Bot(process.env.BOT_API_KEY);
 const filePath = path.join(__dirname, "data", "users.json");
+
+async function connectDB() {
+	try {
+		await mongoose.connect(process.env.MONGO_URI, {
+			useNewUrlParser: true,
+			useUnifiedTopology: true,
+		});
+		console.log("✅ Connected to MongoDB");
+	} catch (error) {
+		console.error("❌ Error connecting to MongoDB:", error);
+		process.exit(1);
+	}
+}
+connectDB();
 
 bot.api.setMyCommands([
 	{
@@ -26,23 +42,18 @@ bot.command("start", async (ctx) => {
 		username: ctx.from.username || "No username",
 		first_name: ctx.from.first_name,
 		last_name: ctx.from.last_name || "",
-		date: new Date().toISOString(),
 	};
-	if (!fs.existsSync(path.dirname(filePath))) {
-		fs.mkdirSync(path.dirname(filePath), { recursive: true });
-	}
-
-	let users = [];
-
-	if (fs.existsSync(filePath)) {
-		const data = fs.readFileSync(filePath, "utf8");
-		users = JSON.parse(data);
-	}
-
-	if (!users.some((user) => user.id === userData.id)) {
-		users.push(userData);
-		fs.writeFileSync(filePath, JSON.stringify(users, null, 2));
-		console.log("New user was added:", userData);
+	try {
+		const existingUser = await User.findOne({ id: ctx.from.id });
+		if (!existingUser) {
+			const newUser = new User(userData);
+			await newUser.save();
+			console.log("✅ New user added:", userData);
+		} else {
+			console.log("ℹ️ User already exists:", existingUser);
+		}
+	} catch (error) {
+		console.error("❌ Error saving user:", error);
 	}
 });
 
@@ -71,7 +82,7 @@ bot.catch((err) => {
 	const e = err.error;
 
 	if (e instanceof HttpError) {
-		console.error("Coukd not contact with Telegram server:", e);
+		console.error("Could not contact with Telegram server:", e);
 	} else if (e instanceof GrammyError) {
 		console.error("Error in request:", e.description);
 	} else {
