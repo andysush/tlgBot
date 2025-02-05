@@ -29,7 +29,6 @@ bot.api.setMyCommands([
 ]);
 
 bot.command("start", async (ctx) => {
-	console.log(ctx);
 	await ctx.replyWithPhoto(new InputFile("./media/gcg_bcgrnd.jpg"), {
 		caption: "Welcome to GCG_LAB",
 	});
