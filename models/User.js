@@ -5,6 +5,9 @@ const userSchema = new mongoose.Schema({
 	username: { type: String, default: "No username" },
 	first_name: { type: String, required: true },
 	last_name: { type: String, default: "" },
+	user_lang: { type: String, default: "" },
+	is_premium: { type: Boolean, default: false },
+	is_bot: { type: Boolean, default: false },
 	date: { type: Date, default: Date.now },
 });
 
