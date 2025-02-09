@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 	// Отримання даних із сервера
 	async function fetchUsers() {
 		try {
-			const response = await fetch("http://localhost:3001/api/users");
+			const response = await fetch("/api/users");
 			allUsers = await response.json();
 			populateFilters(allUsers);
 			renderUsers(allUsers);
