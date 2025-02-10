@@ -103,9 +103,8 @@ bot.on("message:location", async (ctx) => {
 		console.log(`🌍 Отримано IP: ${userIp}`);
 
 		// 2️⃣ Отримуємо країну користувача
-		const API_KEY = "7a4066e56c6d08";
 		const countryResponse = await fetch(
-			`https://ipinfo.io/${userIp}/json?token=${API_KEY}`
+			`https://ipinfo.io/${userIp}/json?token=${process.env.API_KEY}`
 		);
 		const countryData = await countryResponse.json();
 
