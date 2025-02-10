@@ -25,6 +25,23 @@ document.addEventListener("DOMContentLoaded", async function () {
                 <td>${user.user_lang}</td>
                 <td>${user.is_premium ? "✅" : "❌"}</td>
                 <td>${user.is_bot ? "🤖" : "👤"}</td>
+								<td>
+                ${
+									user.location
+										? `<a href="https://www.google.com/maps?q=${
+												user.location.latitude
+										  },${
+												user.location.longitude
+										  }" target="_blank" title="Переглянути на карті">
+                        🌍 <span style="font-size: 12px;">(${user.location.latitude.toFixed(
+													3
+												)}, ${user.location.longitude.toFixed(3)})</span>
+                    </a>`
+										: "❌ Немає даних"
+								}
+            </td>
+						<td>${user.country || "no data"}</td>
+						<td>${user.ip || "no data"}</td>
             `;
 			userTable.appendChild(row);
 		});

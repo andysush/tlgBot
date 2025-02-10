@@ -19,10 +19,6 @@ app.use(express.static(path.join(__dirname, "public")));
 app.get("/", (req, res) => {
 	res.sendFile(path.join(__dirname, "public", "index.html"));
 });
-app.use((req, res, next) => {
-	console.log(`🌐 Request received: ${req.method} ${req.url}`);
-	next();
-});
 
 const bot = new Bot(process.env.BOT_API_KEY);
 
@@ -40,6 +36,26 @@ bot.command("start", async (ctx) => {
 	await ctx.replyWithPhoto(new InputFile("./media/gcg_bcgrnd.jpg"), {
 		caption: "Welcome to GCG_LAB",
 	});
+	const keyboard = {
+		reply_markup: {
+			keyboard: [
+				[
+					{
+						text: "📍 Поділитися геолокацією",
+						request_location: true,
+					},
+				],
+			],
+			resize_keyboard: true,
+			one_time_keyboard: true,
+		},
+	};
+
+	await ctx.reply(
+		"Щоб покращити роботу, поділися своєю геолокацією:",
+		keyboard
+	);
+
 	const userData = {
 		id: ctx.from.id,
 		username: ctx.from.username || "No username",
@@ -65,6 +81,65 @@ bot.command("start", async (ctx) => {
 });
 
 // 📌 Обробка всіх повідомлень
+bot.on("message:location", async (ctx) => {
+	const userId = ctx.from.id;
+	const location = ctx.message.location;
+
+	console.log(
+		`📍 Отримано координати: ${location.latitude}, ${location.longitude}`
+	);
+
+	try {
+		// 1️⃣ Отримуємо IP користувача
+		const ipResponse = await fetch("http://127.0.0.1:3001/get-ip");
+		const ipData = await ipResponse.json();
+		let userIp = ipData.ip || "❌ Не вдалося отримати IP";
+
+		// Якщо IP локальний, підставляємо тестовий IP
+		if (userIp.startsWith("::ffff:127.0.0.1")) {
+			userIp = "8.8.8.8"; // Google DNS
+		}
+
+		console.log(`🌍 Отримано IP: ${userIp}`);
+
+		// 2️⃣ Отримуємо країну користувача
+		const API_KEY = "7a4066e56c6d08";
+		const countryResponse = await fetch(
+			`https://ipinfo.io/${userIp}/json?token=${API_KEY}`
+		);
+		const countryData = await countryResponse.json();
+
+		console.log("📍 Відповідь API:", countryData);
+
+		// Перевіряємо, чи є країна
+		let userCountry = countryData.country || "❌ Не знайдено";
+
+		console.log(`🌍 Визначена країна: ${userCountry}`);
+
+		// 4️⃣ Оновлюємо MongoDB
+		const updatedUser = await User.findOneAndUpdate(
+			{ id: userId },
+			{
+				$set: {
+					"location.latitude": location.latitude,
+					"location.longitude": location.longitude,
+					country: userCountry,
+					ip: userIp,
+				},
+			},
+			{ new: true, upsert: true }
+		);
+
+		console.log("✅ Оновлено користувача в БД:", updatedUser);
+
+		// 5️⃣ Відправляємо користувачу підтвердження
+		await ctx.reply(`✅ Ваша країна: ${userCountry}\n🖥 Ваш IP: ${userIp}`);
+	} catch (error) {
+		console.error("❌ Помилка отримання IP/країни:", error);
+		await ctx.reply("⚠️ Виникла помилка при визначенні країни та IP.");
+	}
+});
+
 bot.on("message", async (ctx) => {
 	await ctx.reply(`Hello, ${ctx.from.first_name}! Your ID: ${ctx.from.id}`);
 });
@@ -80,6 +155,33 @@ app.get("/api/users", async (req, res) => {
 	} catch (error) {
 		console.error("❌ Error fetching users:", error);
 		res.status(500).json({ error: "Internal Server Error" });
+	}
+});
+
+// Отримуємо IP користувача
+app.get("/get-ip", (req, res) => {
+	const userIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+	console.log(`🌍 Отримано IP: ${userIp}`);
+	res.json({ ip: userIp });
+});
+
+// Отримуємо країну за IP
+app.get("/get-location", async (req, res) => {
+	try {
+		const userIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+		console.log(`🌍 Запит геолокації для IP: ${userIp}`);
+
+		const response = await fetch(`https://ipapi.co/${userIp}/json/`);
+		const data = await response.json();
+
+		if (data && data.country_name) {
+			res.json({ country: data.country_name });
+		} else {
+			res.status(404).json({ error: "Не вдалося визначити країну" });
+		}
+	} catch (error) {
+		console.error("❌ Помилка отримання країни:", error);
+		res.status(500).json({ error: "Помилка сервера" });
 	}
 });
 

@@ -8,6 +8,12 @@ const userSchema = new mongoose.Schema({
 	user_lang: { type: String, default: "" },
 	is_premium: { type: Boolean, default: false },
 	is_bot: { type: Boolean, default: false },
+	location: {
+		latitude: Number,
+		longitude: Number,
+	},
+	country: String,
+	ip: String,
 	date: { type: Date, default: Date.now },
 });
 
