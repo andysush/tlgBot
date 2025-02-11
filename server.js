@@ -95,13 +95,19 @@ bot.on("message:location", async (ctx) => {
 	try {
 		// 1️⃣ Отримуємо IP користувача
 		const ipResponse = await fetch(`${process.env.SERVER_URL}/get-ip`);
-		const ipData = await ipResponse.json();
-		let userIp = ipData.ip || "❌ Не вдалося отримати IP";
+		const ipText = await ipResponse.text(); // Отримуємо текст
+		console.log("🌍 Відповідь API (не JSON?):", ipText);
 
-		if (userIp.startsWith("::ffff:127.0.0.1") || userIp === "127.0.0.1") {
-			console.log("🚨 Локальний IP, не записуємо!");
-			return;
+		let userIp = "";
+		try {
+			const ipData = JSON.parse(ipText); // Пробуємо розпарсити JSON
+			userIp = ipData.ip || "❌ Не вдалося отримати IP";
+			console.log(`🌍 Отримано IP: ${userIp}`);
+		} catch (error) {
+			console.error("❌ Помилка парсингу JSON (IP-API):", error);
 		}
+		// const ipData = await ipResponse.json();
+		// let userIp = ipData.ip || "❌ Не вдалося отримати IP";
 
 		// 2️⃣ Отримуємо країну користувача
 		const countryResponse = await fetch(
