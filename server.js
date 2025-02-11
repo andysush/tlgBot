@@ -13,17 +13,18 @@ app.set("trust proxy", true);
 app.use(cors());
 app.use(express.json());
 
-// Віддаємо статичні файли (фронтенд)
+// 📌 Віддаємо статичні файли (фронтенд)
 app.use(express.static(path.join(__dirname, "public")));
 
-// Віддаємо index.html при заході на головну
+// 📌 Віддаємо index.html при заході на головну
 app.get("/", (req, res) => {
 	res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
+// 📌 Ініціалізація бота
 const bot = new Bot(process.env.BOT_API_KEY);
 
-// 📌 Підключаємося до MongoDB
+// 📌 Підключення до MongoDB
 mongoose
 	.connect(process.env.MONGO_URI, {
 		useNewUrlParser: true,
@@ -78,32 +79,30 @@ bot.on("message:location", async (ctx) => {
 	console.log(
 		`📍 Отримано координати: ${location.latitude}, ${location.longitude}`
 	);
-
 	try {
-		// Отримуємо реальний IP користувача
-		const ipResponse = await fetch(`${process.env.SERVER_URL}/get-ip`);
-		// const ipResponse = await fetch("https://api64.ipify.org?format=json");
+		// Отримуємо IP користувача через ipify
+		const ipResponse = await fetch("https://api64.ipify.org?format=json");
 		const ipData = await ipResponse.json();
 		const userIp = ipData.ip || "Не вдалося отримати IP";
+
 		console.log(`🌍 Отримано IP: ${userIp}`);
 
-		// Отримуємо країну за IP
+		// Отримуємо країну користувача
 		const countryResponse = await fetch(
 			`https://ipinfo.io/${userIp}/json?token=${process.env.API_KEY}`
 		);
 		const countryData = await countryResponse.json();
 		const userCountry = countryData.country || "Не знайдено";
+
 		console.log(`🌍 Визначена країна: ${userCountry}`);
 
-		// Оновлюємо MongoDB
+		// Оновлення користувача в БД
 		const updatedUser = await User.findOneAndUpdate(
 			{ id: userId },
 			{
 				$set: {
-					location: {
-						latitude: location.latitude,
-						longitude: location.longitude,
-					},
+					"location.latitude": location.latitude,
+					"location.longitude": location.longitude,
 					country: userCountry,
 					ip: userIp,
 				},
@@ -112,6 +111,8 @@ bot.on("message:location", async (ctx) => {
 		);
 
 		console.log("✅ Оновлено користувача в БД:", updatedUser);
+
+		// Відправляємо користувачу підтвердження
 		await ctx.reply(`✅ Ваша країна: ${userCountry}\n🖥 Ваш IP: ${userIp}`);
 	} catch (error) {
 		console.error("❌ Помилка отримання IP/країни:", error);
@@ -129,32 +130,6 @@ app.get("/api/users", async (req, res) => {
 		res.status(500).json({ error: "Internal Server Error" });
 	}
 });
-
-// Отримуємо реальний IP користувача
-app.get("/get-ip", (req, res) => {
-	let userIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-
-	// Видаляємо IPv6 префікс (::ffff:) та локальний ::1
-	if (userIp.includes(",")) {
-		userIp = userIp.split(",")[0]; // Якщо є список IP — беремо перший
-	}
-	userIp = userIp.replace("::ffff:", "").replace("::1", "127.0.0.1");
-
-	console.log(`🌍 Реальний IP користувача: ${userIp}`);
-	res.json({ ip: userIp });
-});
-
-// app.get("/get-ip", async (req, res) => {
-// 	try {
-// 		const response = await fetch("https://api64.ipify.org?format=json");
-// 		const data = await response.json();
-// 		console.log(`🌍 Реальний IP користувача: ${data.ip}`);
-// 		res.json({ ip: data.ip });
-// 	} catch (error) {
-// 		console.error("❌ Помилка отримання реального IP:", error);
-// 		res.status(500).json({ error: "Помилка сервера" });
-// 	}
-// });
 
 // 📌 Запускаємо сервер Express та Telegram-бота
 app.listen(PORT, () => {
