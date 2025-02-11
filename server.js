@@ -116,6 +116,19 @@ bot.on("message:location", async (ctx) => {
 		await ctx.reply("⚠️ Виникла помилка при визначенні країни.");
 	}
 });
+//📌 API для отримання списку юзерів (для сайту)
+app.get("/", (req, res) => {
+	res.send("Server is running!");
+});
+app.get("/api/users", async (req, res) => {
+	try {
+		const users = await User.find({}); // Фільтр через URL-параметри
+		res.json(users);
+	} catch (error) {
+		console.error("❌ Error fetching users:", error);
+		res.status(500).json({ error: "Internal Server Error" });
+	}
+});
 
 // 📌 Запускаємо сервер Express та Telegram-бота
 app.listen(PORT, () => {
