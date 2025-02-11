@@ -81,7 +81,7 @@ bot.on("message:location", async (ctx) => {
 	);
 	try {
 		// Отримуємо IP користувача через ipify
-		const ipResponse = await fetch("https://api64.ipify.org?format=json");
+		const ipResponse = await fetch(`${process.env.SERVER_URL}/get-ip`);
 		const ipData = await ipResponse.json();
 		const userIp = ipData.ip || "Не вдалося отримати IP";
 
@@ -120,6 +120,18 @@ bot.on("message:location", async (ctx) => {
 	}
 });
 
+app.get("/get-ip", (req, res) => {
+	let userIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+	// Видаляємо IPv6 префікс (::ffff:) та локальний ::1
+	if (userIp.includes(",")) {
+		userIp = userIp.split(",")[0]; // Якщо є список IP — беремо перший
+	}
+	userIp = userIp.replace("::ffff:", "").replace("::1", "");
+
+	console.log(`🌍 Реальний IP користувача: ${userIp}`);
+	res.json({ ip: userIp });
+});
 // 📌 API для отримання списку юзерів (для сайту)
 app.get("/api/users", async (req, res) => {
 	try {
