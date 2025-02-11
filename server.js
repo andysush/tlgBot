@@ -130,29 +130,18 @@ app.get("/api/users", async (req, res) => {
 });
 
 // Отримуємо реальний IP користувача
-app.get("/get-ip", (req, res) => {
-	let userIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
 
-	if (userIp.includes(",")) {
-		userIp = userIp.split(",")[0]; // Якщо є список IP, беремо перший
+app.get("/get-ip", async (req, res) => {
+	try {
+		const response = await fetch("https://api64.ipify.org?format=json");
+		const data = await response.json();
+		console.log(`🌍 Реальний IP користувача: ${data.ip}`);
+		res.json({ ip: data.ip });
+	} catch (error) {
+		console.error("❌ Помилка отримання реального IP:", error);
+		res.status(500).json({ error: "Помилка сервера" });
 	}
-
-	userIp = userIp.replace("::ffff:", "").replace("::1", "127.0.0.1"); // Видаляємо IPv6 префікс
-
-	console.log(`🌍 Отримано реальний IP: ${userIp}`);
-	res.json({ ip: userIp });
 });
-// app.get("/get-ip", async (req, res) => {
-// 	try {
-// 		const response = await fetch("https://api64.ipify.org?format=json");
-// 		const data = await response.json();
-// 		console.log(`🌍 Реальний IP користувача: ${data.ip}`);
-// 		res.json({ ip: data.ip });
-// 	} catch (error) {
-// 		console.error("❌ Помилка отримання реального IP:", error);
-// 		res.status(500).json({ error: "Помилка сервера" });
-// 	}
-// });
 
 // 📌 Запускаємо сервер Express та Telegram-бота
 app.listen(PORT, () => {
