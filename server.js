@@ -95,8 +95,11 @@ bot.on("message:location", async (ctx) => {
 	try {
 		// 1️⃣ Отримуємо IP користувача
 		const ipResponse = await fetch(`${process.env.SERVER_URL}/get-ip`);
-		const ipText = await ipResponse.text(); // Отримуємо текст
-		console.log("🌍 Відповідь API (не JSON?):", ipText);
+		const ipText = await ipResponse.text();
+		if (ipText.startsWith("<")) {
+			throw new Error("❌ API повернуло HTML замість JSON");
+		} // Отримуємо текст
+		console.log("🌍 Відповідь API (IP):", ipText);
 
 		let userIp = "";
 		try {
@@ -110,17 +113,24 @@ bot.on("message:location", async (ctx) => {
 		// let userIp = ipData.ip || "❌ Не вдалося отримати IP";
 
 		// 2️⃣ Отримуємо країну користувача
+		const IP_KEY = process.env.API_KEY;
 		const countryResponse = await fetch(
-			`https://ipinfo.io/${userIp}/json?token=${process.env.API_KEY}`
+			`https://ipinfo.io/${userIp}/json?token=${IP_KEY}`
 		);
-		const countryData = await countryResponse.json();
+		const countryText = await countryResponse.text();
+		console.log("📍 Відповідь API (країна):", countryText);
 
-		console.log("📍 Відповідь API:", countryData);
-
-		// Перевіряємо, чи є країна
-		let userCountry = countryData.country || "❌ Не знайдено";
-
+		const countryData = JSON.parse(countryText);
+		const userCountry = countryData.country || "❌ Не знайдено";
 		console.log(`🌍 Визначена країна: ${userCountry}`);
+		// const countryData = await countryResponse.json();
+
+		// console.log("📍 Відповідь API:", countryData);
+
+		// // Перевіряємо, чи є країна
+		// let userCountry = countryData.country || "❌ Не знайдено";
+
+		// console.log(`🌍 Визначена країна: ${userCountry}`);
 
 		// 4️⃣ Оновлюємо MongoDB
 		const updatedUser = await User.findOneAndUpdate(
