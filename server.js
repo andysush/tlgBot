@@ -176,22 +176,27 @@ app.get("/api/users", async (req, res) => {
 
 // Отримуємо IP користувача
 app.get("/get-ip", (req, res) => {
-	let userIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+	let userIp =
+		req.headers["x-forwarded-for"]?.split(",")[0] || // Беремо перший IP зі списку
+		req.socket?.remoteAddress ||
+		"Не вдалося отримати IP";
 
-	// Видаляємо IPv6 префікс, якщо є
-	if (userIp.includes(",")) {
-		userIp = userIp.split(",")[0]; // Беремо перший IP у списку
-	}
-	userIp = userIp.replace("::ffff:", "").replace("::1", "127.0.0.1"); // Видаляємо ::ffff:
-
-	// Якщо локально — використовуємо тестовий IP
-	if (userIp === "127.0.0.1") {
-		userIp = "8.8.8.8"; // Google DNS для тестів
-	}
-
-	console.log(`🌍 Отримано IP: ${userIp}`);
+	console.log(`🌍 Реальний IP користувача: ${userIp}`);
 	res.json({ ip: userIp });
 });
+
+// app.get("/get-ip", (req, res) => {
+// 	let userIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+// 	// Видаляємо IPv6 префікс, якщо є
+// 	if (userIp.includes(",")) {
+// 		userIp = userIp.split(",")[0]; // Беремо перший IP у списку
+// 	}
+// 	userIp = userIp.replace("::ffff:", "").replace("::1", "127.0.0.1"); // Видаляємо ::ffff:
+
+// 	console.log(`🌍 Отримано IP: ${userIp}`);
+// 	res.json({ ip: userIp });
+// });
 
 // Отримуємо країну за IP
 app.get("/get-location", async (req, res) => {
