@@ -9,6 +9,7 @@ const path = require("path");
 
 const app = express();
 
+app.set("trust proxy", true);
 app.use(cors());
 app.use(express.json());
 
@@ -113,9 +114,8 @@ bot.on("message:location", async (ctx) => {
 		// let userIp = ipData.ip || "❌ Не вдалося отримати IP";
 
 		// 2️⃣ Отримуємо країну користувача
-		const IP_KEY = process.env.API_KEY;
 		const countryResponse = await fetch(
-			`https://ipinfo.io/${userIp}/json?token=${IP_KEY}`
+			`https://ipinfo.io/${userIp}/json?token=${process.env.API_KEY}`
 		);
 		const countryText = await countryResponse.text();
 		console.log("📍 Відповідь API (країна):", countryText);
