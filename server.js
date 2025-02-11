@@ -80,19 +80,17 @@ bot.on("message:location", async (ctx) => {
 		`📍 Отримано координати: ${location.latitude}, ${location.longitude}`
 	);
 	try {
-		// Отримуємо IP користувача через ipify
-		const ipResponse = await fetch(`${process.env.SERVER_URL}/get-ip`);
-		const ipData = await ipResponse.json();
-		const userIp = ipData.ip || "Не вдалося отримати IP";
-
-		console.log(`🌍 Отримано IP: ${userIp}`);
-
-		// Отримуємо країну користувача
+		// Виконуємо запит до Nominatim API для отримання країни за координатами
 		const countryResponse = await fetch(
-			`https://ipinfo.io/${userIp}/json?token=${process.env.API_KEY}`
+			`https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.latitude}&lon=${location.longitude}&zoom=3&addressdetails=1`
 		);
 		const countryData = await countryResponse.json();
-		const userCountry = countryData.country || "Не знайдено";
+
+		// Отримуємо назву країни
+		const userCountry =
+			countryData.address && countryData.address.country
+				? countryData.address.country
+				: "Не знайдено";
 
 		console.log(`🌍 Визначена країна: ${userCountry}`);
 
@@ -104,7 +102,6 @@ bot.on("message:location", async (ctx) => {
 					"location.latitude": location.latitude,
 					"location.longitude": location.longitude,
 					country: userCountry,
-					ip: userIp,
 				},
 			},
 			{ new: true, upsert: true }
@@ -113,10 +110,10 @@ bot.on("message:location", async (ctx) => {
 		console.log("✅ Оновлено користувача в БД:", updatedUser);
 
 		// Відправляємо користувачу підтвердження
-		await ctx.reply(`✅ Ваша країна: ${userCountry}\n🖥 Ваш IP: ${userIp}`);
+		await ctx.reply(`✅ Ваша країна: ${userCountry}`);
 	} catch (error) {
-		console.error("❌ Помилка отримання IP/країни:", error);
-		await ctx.reply("⚠️ Виникла помилка при визначенні країни та IP.");
+		console.error("❌ Помилка отримання країни:", error);
+		await ctx.reply("⚠️ Виникла помилка при визначенні країни.");
 	}
 });
 
@@ -131,16 +128,6 @@ app.get("/get-ip", (req, res) => {
 
 	console.log(`🌍 Реальний IP користувача: ${userIp}`);
 	res.json({ ip: userIp });
-});
-// 📌 API для отримання списку юзерів (для сайту)
-app.get("/api/users", async (req, res) => {
-	try {
-		const users = await User.find({});
-		res.json(users);
-	} catch (error) {
-		console.error("❌ Error fetching users:", error);
-		res.status(500).json({ error: "Internal Server Error" });
-	}
 });
 
 // 📌 Запускаємо сервер Express та Telegram-бота
