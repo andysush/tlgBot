@@ -94,16 +94,14 @@ bot.on("message:location", async (ctx) => {
 
 	try {
 		// 1️⃣ Отримуємо IP користувача
-		const ipResponse = await fetch("http://127.0.0.1:3001/get-ip");
+		const ipResponse = await fetch(`${process.env.SERVER_URL}/get-ip`);
 		const ipData = await ipResponse.json();
 		let userIp = ipData.ip || "❌ Не вдалося отримати IP";
 
-		// Якщо IP локальний, підставляємо тестовий IP
-		if (userIp.startsWith("::ffff:127.0.0.1")) {
-			userIp = "8.8.8.8"; // Google DNS
+		if (userIp.startsWith("::ffff:127.0.0.1") || userIp === "127.0.0.1") {
+			console.log("🚨 Локальний IP, не записуємо!");
+			return;
 		}
-
-		console.log(`🌍 Отримано IP: ${userIp}`);
 
 		// 2️⃣ Отримуємо країну користувача
 		const countryResponse = await fetch(
