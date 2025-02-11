@@ -40,8 +40,8 @@ document.addEventListener("DOMContentLoaded", async function () {
 										: "❌ Немає даних"
 								}
             </td>
-						<td>${user.country || "no data"}</td>
-						<td>${user.ip || "no data"}</td>
+						<td>${user.country || "❌ Немає даних"}</td>
+						
             `;
 			userTable.appendChild(row);
 		});

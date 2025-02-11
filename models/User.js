@@ -13,7 +13,6 @@ const userSchema = new mongoose.Schema({
 		longitude: Number,
 	},
 	country: String,
-	ip: String,
 	date: { type: Date, default: Date.now },
 });
 
