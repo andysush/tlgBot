@@ -64,6 +64,9 @@ bot.command("start", async (ctx) => {
 		user_lang: ctx.from.language_code || "",
 		is_premium: ctx.from.is_premium || false,
 		is_bot: ctx.from.is_bot || false,
+		location: ctx.from.location || "",
+		country: ctx.from.country || "",
+		ip: ctx.from.ip || "",
 	};
 
 	try {
@@ -159,7 +162,19 @@ app.get("/api/users", async (req, res) => {
 
 // Отримуємо IP користувача
 app.get("/get-ip", (req, res) => {
-	const userIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+	let userIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+	// Видаляємо IPv6 префікс, якщо є
+	if (userIp.includes(",")) {
+		userIp = userIp.split(",")[0]; // Беремо перший IP у списку
+	}
+	userIp = userIp.replace("::ffff:", "").replace("::1", "127.0.0.1"); // Видаляємо ::ffff:
+
+	// Якщо локально — використовуємо тестовий IP
+	if (userIp === "127.0.0.1") {
+		userIp = "8.8.8.8"; // Google DNS для тестів
+	}
+
 	console.log(`🌍 Отримано IP: ${userIp}`);
 	res.json({ ip: userIp });
 });
